@@ -114,15 +114,19 @@ jobs:
         with:
           script: |
             const fs = require('fs');
+
+            // Read the native GitHub release notes generated in the previous step
             const releaseBody = fs.readFileSync('release_body.txt', 'utf8');
             
-            const prRegex = /\(#(\d+)\)/g;
+            // Extract all PR numbers from the text (matching the /pull/1234 format at the end of the line)
+            const prRegex = /\/pull\/(\d+)/g;
             const prNumbers = [];
             let match;
             while ((match = prRegex.exec(releaseBody)) !== null) {
               prNumbers.push(parseInt(match[1]));
             }
             
+            // Remove duplicates just in case
             const uniquePRs = [...new Set(prNumbers)];
             console.log(`Found PRs in release: ${uniquePRs.join(', ')}`);
             
@@ -130,6 +134,7 @@ jobs:
             let changelogContent = `## [${process.env.VERSION}] - ${date}\n\n`;
             let hasNotes = false;
             
+            // Fetch the body of each PR and extract the release-note block or fallback to title
             for (const prNumber of uniquePRs) {
               try {
                 const { data: pr } = await github.rest.pulls.get({
@@ -159,7 +164,7 @@ jobs:
                     finalNote = title; // Block exists but is empty, fallback to PR title
                   }
                 } else {
-                  finalNote = title;
+                  finalNote = title; // No block found (e.g. old PRs), fallback to PR title
                 }
                 
                 changelogContent += `* ${finalNote} (#${prNumber})\n`;
