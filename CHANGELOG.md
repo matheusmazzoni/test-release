@@ -1,3 +1,9 @@
+## [v0.3.0] - 2026-05-29
+
+* No notable changes for this release.
+
+---
+
 # Changelog
 
 All notable changes to External Secrets Operator are documented here.
