@@ -84,21 +84,6 @@ jobs:
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${TOKEN}@github.com/${GH_REPO}.git"
 
-      - name: Update Docs
-        if: github.ref == 'refs/heads/main'
-        env:
-          DOCS_VERSION: ${{ github.event.inputs.version }}
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        run: make docs.publish DOCS_ALIAS=latest
-
-      - name: Fetch Native Release Notes
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ github.event.inputs.version }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          gh api repos/${GH_REPO}/releases/tags/${VERSION} --jq '.body' > release_body.txt
-
   changelog-pr:
     name: Create CHANGELOG PR
     needs: [release]
@@ -194,6 +179,15 @@ jobs:
             // Save the parsed notes to a new file
             fs.writeFileSync('PARSED_CHANGELOG.md', changelogContent);
 
+      - name: Configure Git
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${TOKEN}@github.com/${GH_REPO}.git"
+          
       - name: Create CHANGELOG PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -215,78 +209,3 @@ jobs:
             --body "Automated PR to update the \`CHANGELOG.md\` with the latest release notes from ${VERSION}." \
             --base main \
             --label "area/documentation"
-  promote:
-    name: Promote Container Image
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-        - tag_suffix: "" # distroless image
-        - tag_suffix: "-ubi" # ubi image
-        - tag_suffix: "-ubi-boringssl" # ubi image
-
-    permissions:
-      contents: write #to update the github release
-      id-token: write #for keyless sign
-      packages: write #to update packages with added SBOMs.
-
-    env:
-      SOURCE_TAG: ${{ github.event.inputs.source_ref }}${{ matrix.tag_suffix }}
-      RELEASE_TAG: ${{ github.event.inputs.version }}${{ matrix.tag_suffix }}
-
-    steps:
-      - uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
-        with:
-          egress-policy: audit
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Setup Go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
-        id: setup-go
-        with:
-          go-version-file: "go.mod"
-          cache: false
-
-      - name: Download Go modules
-        run: go mod download
-
-      - name: Login to Docker
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Promote Container Image
-        run: make docker.promote
-
-      - name: Build release manifests
-        env:
-          RELEASE_VERSION: ${{ github.event.inputs.version }}
-        run: |
-          # temporarily patch the version so we generate manifests with the new version
-          yq e -i ".version = \"$RELEASE_VERSION\"" ./deploy/charts/external-secrets/Chart.yaml
-          yq e -i ".appVersion = \"$RELEASE_VERSION\"" ./deploy/charts/external-secrets/Chart.yaml
-          make manifests
-
-      - name: Sign promoted image
-        id: sign
-        uses: ./.github/actions/sign
-        with:
-          image-name: ${{ env.IMAGE_NAME }}
-          image-tag: ${{ env.RELEASE_TAG }}
-
-      - name: Update Release
-        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
-        with:
-          tag_name: ${{ github.event.inputs.version }}
-          files: |
-            provenance.${{ env.RELEASE_TAG }}.intoto.jsonl
-            sbom.${{ env.RELEASE_TAG }}.spdx.json
-            bin/deploy/manifests/external-secrets.yaml
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
