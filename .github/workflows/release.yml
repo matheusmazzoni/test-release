@@ -145,8 +145,9 @@ jobs:
                 
                 const body = pr.body || "";
                 const title = pr.title;
+                const prUrl = pr.html_url; 
                 
-                const noteRegex = /```release-note\s*\n([\s\S]*?)\n```/;
+                const noteRegex = /```release-note\s*([\s\S]*?)```/;
                 const noteMatch = body.match(noteRegex);
                 
                 let finalNote = "";
@@ -167,7 +168,7 @@ jobs:
                   finalNote = title; // No block found (e.g. old PRs), fallback to PR title
                 }
                 
-                changelogContent += `* ${finalNote} (#${prNumber})\n`;
+                changelogContent += `* ${finalNote} (${prUrl})\n`;
                 hasNotes = true;
                 
               } catch (error) {
