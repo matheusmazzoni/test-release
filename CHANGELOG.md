@@ -1,3 +1,10 @@
+## [v0.9.0] - 2026-05-29
+
+* feat: change2 (https://github.com/matheusmazzoni/test-release/pull/9)
+* docs(release): update CHANGELOG for v0.6.0 (https://github.com/matheusmazzoni/test-release/pull/8)
+
+---
+
 ## [v0.6.0] - 2026-05-29
 
 * ```
