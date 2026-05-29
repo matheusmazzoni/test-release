@@ -4,7 +4,7 @@
 
 ## Format
 
-Please ensure that your PR follows the following format for the title: (#7)
+Please ensure that your PR follows the following format for the title: #7
 
 ---
 
