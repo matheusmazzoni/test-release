@@ -1,3 +1,13 @@
+## [v0.6.0] - 2026-05-29
+
+* ```
+
+## Format
+
+Please ensure that your PR follows the following format for the title: (#7)
+
+---
+
 # Changelog
 
 All notable changes to External Secrets Operator are documented here.
