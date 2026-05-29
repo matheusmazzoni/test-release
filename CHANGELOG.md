@@ -1,3 +1,9 @@
+## [v0.11.0] - 2026-05-29
+
+* docs(release): update CHANGELOG for v0.10.0 (https://github.com/matheusmazzoni/test-release/pull/12)
+
+---
+
 ## [v0.10.0] - 2026-05-29
 
 * Test Release notes for deployers (https://github.com/matheusmazzoni/test-release/pull/11)
